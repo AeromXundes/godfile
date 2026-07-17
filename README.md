@@ -1,7 +1,10 @@
-# godfile
+# godfile-cpp
 
 **Finds the god files in your C/C++ codebase** — kitchen-sink headers that
 define more top-level types than the one-type-per-file convention allows.
+
+*godfile-cpp is the C/C++ member of the godfile family; the `godfile:ignore-file`
+directive and `GF`-prefixed rule IDs are shared across godfile tools.*
 
 Large, long-lived C++ codebases accumulate "kitchen sink" headers: a file that
 starts with one utility class and grows for years as developers bolt on "just
@@ -27,7 +30,7 @@ knowledge **no maintained C/C++ tool ships this check** — clang-tidy, cppcheck
 cpplint, semgrep, PVS-Studio, SonarSource cfamily, lizard, and OCLint all
 measure other axes (per-function complexity, per-class size, include hygiene).
 IWYU and clang-include-cleaner fix what *consumers* include; neither asks
-whether a header itself is well-scoped. godfile fills that gap.
+whether a header itself is well-scoped. godfile-cpp fills that gap.
 
 ## Install
 
@@ -35,18 +38,18 @@ Requires Python ≥ 3.9 and [universal-ctags](https://github.com/universal-ctags
 on your `PATH` (`apt install universal-ctags` / `brew install universal-ctags`).
 
 ```sh
-pip install godfile
+pip install godfile-cpp
 ```
 
 ## Usage
 
 ```sh
-godfile include/ src/                 # scan headers, human-readable output
-godfile include/ --max-types 3       # looser threshold
-godfile include/ --format sarif > godfile.sarif   # for dashboards / GitHub code scanning
-godfile include/ --format json       # machine-readable
-godfile src/ --sources               # also scan .c/.cc/.cpp files
-godfile . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
+godfile-cpp include/ src/                 # scan headers, human-readable output
+godfile-cpp include/ --max-types 3       # looser threshold
+godfile-cpp include/ --format sarif > godfile.sarif   # for dashboards / GitHub code scanning
+godfile-cpp include/ --format json       # machine-readable
+godfile-cpp src/ --sources               # also scan .c/.cc/.cpp files
+godfile-cpp . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
 ```
 
 Exit codes: `0` clean, `1` findings, `2` usage/environment error — drop it
@@ -62,7 +65,7 @@ include/leveldb/env.h: 7 top-level types (limit 1)
 
 ## What counts as a violation
 
-godfile counts **top-level type definitions** — `class`, `struct`, `enum`,
+godfile-cpp counts **top-level type definitions** — `class`, `struct`, `enum`,
 `union`, and `typedef`s that name an otherwise-anonymous type. It correctly
 does **not** count:
 
@@ -88,7 +91,7 @@ structs), add a suppression comment anywhere in the file:
 
 ## How it works
 
-godfile shells out to universal-ctags (JSON output) and applies the rules
+godfile-cpp shells out to universal-ctags (JSON output) and applies the rules
 above to the tag stream. This makes it **zero-build-dependency**: it works on
 any source tree without a `compile_commands.json`, without the project
 compiling, and without heavyweight AST tooling. The trade-off is heuristic

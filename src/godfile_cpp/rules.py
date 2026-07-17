@@ -18,6 +18,7 @@ INTERNAL_NAMESPACE_SUFFIXES = ("_detail", "_details", "_impl", "_internal", "_in
 EXCEPTION_NAME_RE = re.compile(r"(Exception|Error)$")
 EXCEPTION_BASE_RE = re.compile(r"(exception|error)", re.IGNORECASE)
 
+# family-wide directive: the same comment suppresses any godfile-<lang> tool
 IGNORE_FILE_DIRECTIVE = "godfile:ignore-file"
 
 

@@ -7,8 +7,8 @@ import json
 from . import __version__
 from .rules import RULE_ID, RULE_NAME, Finding
 
-TOOL_NAME = "godfile"
-TOOL_URI = "https://github.com/AeromXundes/godfile"
+TOOL_NAME = "godfile-cpp"
+TOOL_URI = "https://github.com/AeromXundes/godfile-cpp"
 
 
 def render_text(findings: list[Finding], files_scanned: int) -> str:

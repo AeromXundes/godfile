@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from godfile.cli import main
-from godfile.rules import Config, evaluate
-from godfile.scanner import extract_typedefs, find_ctags, run_ctags
+from godfile_cpp.cli import main
+from godfile_cpp.rules import Config, evaluate
+from godfile_cpp.scanner import extract_typedefs, find_ctags, run_ctags
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -86,7 +86,7 @@ def test_sarif_output_is_valid(capsys):
     doc = json.loads(capsys.readouterr().out)
     assert doc["version"] == "2.1.0"
     run = doc["runs"][0]
-    assert run["tool"]["driver"]["name"] == "godfile"
+    assert run["tool"]["driver"]["name"] == "godfile-cpp"
     assert run["tool"]["driver"]["rules"][0]["id"] == "GF001"
     (result,) = run["results"]
     assert result["ruleId"] == "GF001"

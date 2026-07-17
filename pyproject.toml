@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "godfile"
+name = "godfile-cpp"
 version = "0.1.0"
 description = "Detect C/C++ kitchen-sink headers that violate the one-type-per-file convention"
 readme = "README.md"
@@ -20,16 +20,16 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/AeromXundes/godfile"
+Homepage = "https://github.com/AeromXundes/godfile-cpp"
 
 [project.scripts]
-godfile = "godfile.cli:main"
+godfile-cpp = "godfile_cpp.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "--cov=godfile --cov-fail-under=85 --cov-report=term-missing"
+addopts = "--cov=godfile_cpp --cov-fail-under=85 --cov-report=term-missing"
 
 [tool.coverage.run]
-source = ["godfile"]
+source = ["godfile_cpp"]
