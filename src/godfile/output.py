@@ -17,7 +17,7 @@ def render_text(findings: list[Finding], files_scanned: int) -> str:
     lines = []
     for f in findings:
         lines.append(
-            f"{f.file}: {len(f.counted)} top-level types (limit {f.max_types})"
+            f"{f.file}: {f.severity}: {len(f.counted)} top-level types (limit {f.max_types})"
         )
         for t in f.counted:
             lines.append(f"  {t.file}:{t.line}: {t.kind} {t.qualified_name}")
@@ -25,8 +25,10 @@ def render_text(findings: list[Finding], files_scanned: int) -> str:
             lines.append(
                 f"  {t.file}:{t.line}: {t.kind} {t.qualified_name} (exempt)"
             )
+    errors = sum(1 for f in findings if f.severity == "error")
     lines.append(
-        f"\n{files_scanned} file(s) scanned, {len(findings)} kitchen-sink header(s) found."
+        f"\n{files_scanned} file(s) scanned: {errors} error(s), "
+        f"{len(findings) - errors} warning(s)."
     )
     return "\n".join(lines)
 
@@ -39,6 +41,7 @@ def render_json(findings: list[Finding], files_scanned: int) -> str:
         "findings": [
             {
                 "file": f.file,
+                "severity": f.severity,
                 "typeCount": len(f.counted),
                 "maxTypes": f.max_types,
                 "types": [
@@ -87,7 +90,7 @@ def render_sarif(findings: list[Finding]) -> str:
         results.append(
             {
                 "ruleId": RULE_ID,
-                "level": "warning",
+                "level": f.severity,
                 "message": {
                     "text": (
                         f"File defines {len(f.counted)} top-level types "

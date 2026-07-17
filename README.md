@@ -42,18 +42,34 @@ pip install godfile
 
 ```sh
 godfile include/ src/                 # scan headers, human-readable output
-godfile include/ --max-types 3       # looser threshold
+godfile include/ --fail-at 2         # strict: any second type fails the run
+godfile include/ --max-types 3 --fail-at 8   # looser thresholds
 godfile include/ --format sarif > godfile.sarif   # for dashboards / GitHub code scanning
 godfile include/ --format json       # machine-readable
 godfile src/ --sources               # also scan .c/.cc/.cpp files
 godfile . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
 ```
 
-Exit codes: `0` clean, `1` findings, `2` usage/environment error — drop it
-straight into CI.
+## Severity
+
+Type count is a *proxy* for the god-file smell, and its reliability grows with
+its value: two types may be a class and its options struct; ten types is
+almost never fine. godfile therefore grades findings instead of treating the
+convention as binary:
+
+- **≤ `--max-types`** (default 1) — clean, not reported
+- **> `--max-types`, < `--fail-at`** (default 4) — **warning**: reported, exit 0
+- **≥ `--fail-at`** — **error**: reported, exit 1
+
+So out of the box: 1 type is green, 2–3 is yellow, 4+ is red. Convention
+purists set `--fail-at 2`; legacy codebases raise `--fail-at` and ratchet it
+down. Severity flows through to SARIF `level` and the JSON output.
+
+Exit codes: `0` no errors (warnings allowed), `1` errors, `2` usage/environment
+error — drop it straight into CI.
 
 ```text
-include/leveldb/env.h: 7 top-level types (limit 1)
+include/leveldb/env.h: error: 7 top-level types (limit 1)
   include/leveldb/env.h:51: class leveldb::Env
   include/leveldb/env.h:222: class leveldb::SequentialFile
   include/leveldb/env.h:252: class leveldb::RandomAccessFile
@@ -107,21 +123,27 @@ future addition for codebases that want exactness over convenience.
 
 ## Field results
 
-Shallow clones of six well-known repos, default settings plus vendored-code
-excludes (`gtest`, `third_party`, `bundled`, `deps`, …):
+Shallow clones of six well-known repos, default settings (1 green / 2–3
+warning / 4+ error) plus vendored-code excludes (`gtest`, `third_party`,
+`bundled`, `deps`, …):
 
-| Repo | Files | Flagged | Scan time | Worst offender |
-|---|---|---|---|---|
-| redis | 86 | 30 | 0.11s | `src/server.h` — 95 types |
-| rocksdb | 615 | 261 | 0.34s | `java/rocksjni/portal.h` — 107 types |
-| abseil-cpp | 385 | 26 | 0.24s | test/internal helpers |
-| spdlog | 97 | 14 | 0.06s | `common.h` — 7 types |
-| fmt | 22 | 15 | 0.07s | `base.h` — 22 types (few-header by design) |
-| nlohmann/json | 54 | 4 | 0.18s | `json.hpp` (single-header by design) |
+| Repo | Files | Errors | Warnings | Scan time | Worst offender |
+|---|---|---|---|---|---|
+| redis | 86 | 18 | 12 | 0.11s | `src/server.h` — 95 types across ~17 subsystems |
+| rocksdb | 615 | 113 | 148 | 0.34s | `java/rocksjni/portal.h` — 107 types |
+| abseil-cpp | 385 | 11 | 15 | 0.24s | test/internal helpers |
+| spdlog | 97 | 1 | 13 | 0.06s | `common.h` — 7 types |
+| fmt | 22 | 8 | 7 | 0.07s | `base.h` — 22 types (few-header by design) |
+| nlohmann/json | 54 | 3 | 1 | 0.18s | `json.hpp` (single-header by design) |
 
+The bands separate signal well: spdlog's single error against 13 warnings
+reflects a genuinely well-factored codebase (its warnings are mostly a sink
+class plus one small helper), while redis's `src/server.h` is the canonical
+god file — 4,689 lines whose 95 types span replication buffers, the module
+API, client state, the command table, skip-list internals, TLS config, and a
+614-line `redisServer` struct, included by 70 of 125 translation units.
 Deliberately single-header libraries flag loudly — that's what
-`// godfile:ignore-file` or `--max-types` is for. Files like redis's
-`server.h` are the actual target: decades of organic accretion.
+`// godfile:ignore-file` or the threshold flags are for.
 
 ## Prior art
 

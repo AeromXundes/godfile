@@ -24,7 +24,8 @@ IGNORE_FILE_DIRECTIVE = "godfile:ignore-file"
 
 @dataclass
 class Config:
-    max_types: int = 1
+    max_types: int = 1  # green: this many counted types is clean
+    fail_at: int = 4  # red: this many counted types is an error; between = warning
     count_exceptions: bool = False  # count exception types toward the limit
     count_internal: bool = False  # count types in detail/impl namespaces
 
@@ -35,6 +36,7 @@ class Finding:
     counted: list[TypeDef]  # types that count toward the limit, sorted by line
     exempt: list[TypeDef]  # types present but exempt (exceptions, detail helpers)
     max_types: int
+    severity: str = "error"  # "warning" or "error"
 
     @property
     def over_by(self) -> int:
@@ -80,7 +82,14 @@ def evaluate(
             continue
         if file_has_ignore_directive(path):
             continue
+        severity = "error" if len(counted) >= config.fail_at else "warning"
         findings.append(
-            Finding(file=path, counted=counted, exempt=exempt, max_types=config.max_types)
+            Finding(
+                file=path,
+                counted=counted,
+                exempt=exempt,
+                max_types=config.max_types,
+                severity=severity,
+            )
         )
     return findings

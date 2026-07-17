@@ -62,7 +62,17 @@ def build_parser() -> argparse.ArgumentParser:
         type=int,
         default=1,
         metavar="N",
-        help="allowed top-level types per file (default: 1)",
+        help="allowed top-level types per file; more than this is reported "
+        "(default: 1)",
+    )
+    ap.add_argument(
+        "--fail-at",
+        type=int,
+        default=4,
+        metavar="N",
+        help="type count at which a finding becomes an error and fails the run; "
+        "findings between --max-types and this are warnings and exit 0 "
+        "(default: 4, i.e. 1 clean / 2-3 warning / 4+ error)",
     )
     ap.add_argument(
         "--format",
@@ -100,7 +110,10 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    if args.fail_at <= args.max_types:
+        parser.error(f"--fail-at ({args.fail_at}) must be greater than --max-types ({args.max_types})")
 
     files = collect_files(args.paths, include_sources=args.sources, exclude=args.exclude)
     if not files:
@@ -117,6 +130,7 @@ def main(argv: list[str] | None = None) -> int:
     types_by_file = extract_typedefs(tags)
     config = Config(
         max_types=args.max_types,
+        fail_at=args.fail_at,
         count_exceptions=args.count_exceptions,
         count_internal=args.count_internal,
     )
@@ -129,7 +143,7 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print(render_sarif(findings))
 
-    return 1 if findings else 0
+    return 1 if any(f.severity == "error" for f in findings) else 0
 
 
 if __name__ == "__main__":  # pragma: no cover

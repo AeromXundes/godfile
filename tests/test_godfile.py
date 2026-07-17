@@ -76,8 +76,29 @@ def test_kitchen_sink_fails_with_exit_1():
 
 
 def test_max_types_threshold():
-    assert main([str(FIXTURES / "kitchen_sink.h"), "--max-types", "7"]) == 0
-    assert main([str(FIXTURES / "kitchen_sink.h"), "--max-types", "6"]) == 1
+    ks = str(FIXTURES / "kitchen_sink.h")
+    assert main([ks, "--max-types", "7", "--fail-at", "8"]) == 0
+    assert main([ks, "--max-types", "6", "--fail-at", "7"]) == 1
+
+
+def test_warning_band_reports_but_exits_zero(capsys):
+    ks = str(FIXTURES / "kitchen_sink.h")
+    # 7 counted types: over the green line (6) but under the red line (8)
+    assert main([ks, "--max-types", "6", "--fail-at", "8"]) == 0
+    out = capsys.readouterr().out
+    assert "warning: 7 top-level types" in out
+    assert "0 error(s), 1 warning(s)" in out
+
+
+def test_default_bands():
+    ks = str(FIXTURES / "kitchen_sink.h")
+    assert main([ks]) == 1  # 7 types >= default fail-at 4 -> error
+
+
+def test_fail_at_must_exceed_max_types():
+    with pytest.raises(SystemExit) as exc:
+        main([str(FIXTURES / "clean.h"), "--max-types", "4"])
+    assert exc.value.code == 2
 
 
 def test_sarif_output_is_valid(capsys):
@@ -90,6 +111,7 @@ def test_sarif_output_is_valid(capsys):
     assert run["tool"]["driver"]["rules"][0]["id"] == "GF001"
     (result,) = run["results"]
     assert result["ruleId"] == "GF001"
+    assert result["level"] == "error"
     assert "7 top-level types" in result["message"]["text"]
     assert len(result["relatedLocations"]) == 7
 
@@ -100,6 +122,7 @@ def test_json_output_shape(capsys):
     doc = json.loads(capsys.readouterr().out)
     (finding,) = doc["findings"]
     assert finding["typeCount"] == 7
+    assert finding["severity"] == "error"
     assert {t["name"] for t in finding["exemptTypes"]} == {
         "ParseError", "detail::InternalHelper",
     }
