@@ -3,10 +3,6 @@
 **Finds the god files in your C/C++ codebase** — kitchen-sink headers that
 define more top-level types than the one-type-per-file convention allows.
 
-*godfile targets C/C++ today. If variants for other ecosystems ever make sense
-(`godfile-<lang>`), the `godfile:ignore-file` directive and `GF`-prefixed rule
-IDs are designed to carry over.*
-
 Large, long-lived C++ codebases accumulate "kitchen sink" headers: a file that
 starts with one utility class and grows for years as developers bolt on "just
 one more small helper." Eventually a single header holds a dozen unrelated
