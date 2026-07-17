@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import fnmatch
 import sys
 from pathlib import Path
 
@@ -15,8 +16,20 @@ HEADER_SUFFIXES = {".h", ".hpp", ".hh", ".hxx", ".h++", ".cuh", ".inl", ".ipp"}
 SOURCE_SUFFIXES = {".c", ".cc", ".cpp", ".cxx", ".c++", ".cu"}
 
 
-def collect_files(paths: list[str], include_sources: bool) -> list[str]:
+def _excluded(path: str, patterns: list[str]) -> bool:
+    """Match *patterns* against the path and each of its parts (dir names)."""
+    parts = Path(path).parts
+    return any(
+        fnmatch.fnmatch(path, pat) or any(fnmatch.fnmatch(part, pat) for part in parts)
+        for pat in patterns
+    )
+
+
+def collect_files(
+    paths: list[str], include_sources: bool, exclude: list[str] | None = None
+) -> list[str]:
     suffixes = HEADER_SUFFIXES | (SOURCE_SUFFIXES if include_sources else set())
+    exclude = exclude or []
     files: list[str] = []
     for raw in paths:
         p = Path(raw)
@@ -26,7 +39,9 @@ def collect_files(paths: list[str], include_sources: bool) -> list[str]:
             files.extend(
                 str(f)
                 for f in sorted(p.rglob("*"))
-                if f.is_file() and f.suffix.lower() in suffixes
+                if f.is_file()
+                and f.suffix.lower() in suffixes
+                and not _excluded(str(f), exclude)
             )
         else:
             print(f"sinklint: no such path: {raw}", file=sys.stderr)
@@ -71,6 +86,14 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="also scan source files (.c/.cc/.cpp/...), not just headers",
     )
+    ap.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="GLOB",
+        help="skip paths matching this glob (matches full path or any directory "
+        "name; repeatable), e.g. --exclude 'third_party' --exclude '*/bundled/*'",
+    )
     ap.add_argument("--ctags-bin", metavar="PATH", help="universal-ctags binary to use")
     ap.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     return ap
@@ -79,7 +102,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
 
-    files = collect_files(args.paths, include_sources=args.sources)
+    files = collect_files(args.paths, include_sources=args.sources, exclude=args.exclude)
     if not files:
         print("sinklint: no matching files found", file=sys.stderr)
         return 2

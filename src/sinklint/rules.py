@@ -10,8 +10,10 @@ from .scanner import TypeDef
 RULE_ID = "SL001"
 RULE_NAME = "OneTypePerFile"
 
-# namespaces conventionally holding internal-only helpers
+# namespaces conventionally holding internal-only helpers, matched as exact
+# segments or as suffixes (abseil-style container_internal, strings_internal)
 INTERNAL_NAMESPACE_SEGMENTS = {"detail", "details", "impl", "internal", "internals"}
+INTERNAL_NAMESPACE_SUFFIXES = ("_detail", "_details", "_impl", "_internal", "_internals")
 
 EXCEPTION_NAME_RE = re.compile(r"(Exception|Error)$")
 EXCEPTION_BASE_RE = re.compile(r"(exception|error)", re.IGNORECASE)
@@ -45,8 +47,10 @@ def is_exception_type(t: TypeDef) -> bool:
 
 
 def is_internal_type(t: TypeDef) -> bool:
-    segments = {s.lower() for s in t.namespace.split("::") if s}
-    return bool(segments & INTERNAL_NAMESPACE_SEGMENTS)
+    for seg in (s.lower() for s in t.namespace.split("::") if s):
+        if seg in INTERNAL_NAMESPACE_SEGMENTS or seg.endswith(INTERNAL_NAMESPACE_SUFFIXES):
+            return True
+    return False
 
 
 def file_has_ignore_directive(path: str) -> bool:

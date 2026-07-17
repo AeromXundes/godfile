@@ -118,6 +118,34 @@ def test_ignore_directive_on_unreadable_file_is_false():
     assert len(findings) == 1  # unreadable file -> directive treated as absent
 
 
+def test_abseil_style_internal_namespace_exempt():
+    from sinklint.rules import is_internal_type
+
+    def td(ns):
+        return TypeDef(name="X", qualified_name=f"{ns}::X", kind="class",
+                       file="x.h", line=1, namespace=ns)
+
+    assert is_internal_type(td("absl::container_internal"))
+    assert is_internal_type(td("fmt::detail"))
+    assert not is_internal_type(td("absl::container"))
+    assert not is_internal_type(td(""))
+
+
+def test_exclude_globs():
+    from sinklint.cli import collect_files
+
+    fixtures = "tests/fixtures"
+    all_files = collect_files([fixtures], include_sources=False)
+    assert len(all_files) == 3
+    assert collect_files([fixtures], False, exclude=["fixtures"]) == []
+    assert len(collect_files([fixtures], False, exclude=["kitchen_*"])) == 2
+    assert len(collect_files([fixtures], False, exclude=["*/clean.h"])) == 2
+
+
+def test_exclude_flag_end_to_end():
+    assert main(["tests/fixtures", "--exclude", "kitchen_sink.h"]) == 0
+
+
 def test_main_ctags_error_exits_2(capsys):
     assert main(["--ctags-bin", "/nonexistent/ctags", "tests/fixtures/clean.h"]) == 2
     assert "not found" in capsys.readouterr().err

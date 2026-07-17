@@ -46,6 +46,7 @@ sinklint include/ --max-types 3       # looser threshold
 sinklint include/ --format sarif > sinklint.sarif   # for dashboards / GitHub code scanning
 sinklint include/ --format json       # machine-readable
 sinklint src/ --sources               # also scan .c/.cc/.cpp files
+sinklint . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
 ```
 
 Exit codes: `0` clean, `1` findings, `2` usage/environment error — drop it
@@ -76,7 +77,7 @@ count it strictly):
 | Exemption | Rationale | Strict flag |
 |---|---|---|
 | Exception types (`inherits` something matching `exception`/`error`, or named `*Exception`/`*Error`) | a class and the exception it throws belong together | `--count-exceptions` |
-| Types in `detail`/`impl`/`internal` namespaces | internal-only helpers coupled to the public type | `--count-internal` |
+| Types in `detail`/`impl`/`internal` namespaces (incl. abseil-style `*_internal` suffixes) | internal-only helpers coupled to the public type | `--count-internal` |
 
 For files that are legitimately many-types-by-design (e.g. generated protocol
 structs), add a suppression comment anywhere in the file:
@@ -103,6 +104,24 @@ future addition for codebases that want exactness over convenience.
 - Aggregating per-consumer symbol-usage data (IWYU-style) to suggest natural
   split boundaries for an offending header
 - AST-accurate mode via libclang
+
+## Field results
+
+Shallow clones of six well-known repos, default settings plus vendored-code
+excludes (`gtest`, `third_party`, `bundled`, `deps`, …):
+
+| Repo | Files | Flagged | Scan time | Worst offender |
+|---|---|---|---|---|
+| redis | 86 | 30 | 0.11s | `src/server.h` — 95 types |
+| rocksdb | 615 | 261 | 0.34s | `java/rocksjni/portal.h` — 107 types |
+| abseil-cpp | 385 | 26 | 0.24s | test/internal helpers |
+| spdlog | 97 | 14 | 0.06s | `common.h` — 7 types |
+| fmt | 22 | 15 | 0.07s | `base.h` — 22 types (few-header by design) |
+| nlohmann/json | 54 | 4 | 0.18s | `json.hpp` (single-header by design) |
+
+Deliberately single-header libraries flag loudly — that's what
+`// sinklint:ignore-file` or `--max-types` is for. Files like redis's
+`server.h` are the actual target: decades of organic accretion.
 
 ## Prior art
 
