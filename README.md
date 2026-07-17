@@ -123,12 +123,16 @@ future addition for codebases that want exactness over convenience.
 
 ## Roadmap
 
-- SA1402-style carve-outs (e.g. small structs coexisting with one primary class)
-- Config file (`[tool.godfile]` in `pyproject.toml` / `.godfilerc`)
-- Relatedness heuristics: flag *unrelated* types, not just *many* types
-- Aggregating per-consumer symbol-usage data (IWYU-style) to suggest natural
-  split boundaries for an offending header
-- AST-accurate mode via libclang
+- Config file (`[tool.godfile]` in `pyproject.toml` / `.godfilerc`) so
+  thresholds live with the repo
+- Extend size-weighting to small method-less structs, the way enums are
+  already weighted — an options struct coexisting with its primary class
+  shouldn't count like a second class
+
+Deliberately out of scope: scoring types by *relatedness*. Whether many types
+are one cohesive family or a grab-bag is a judgment call; godfile surfaces the
+candidates and leaves that call to you (`godfile:ignore-file` with a rationale
+comment is the intended answer for many-types-by-design files).
 
 ## Field results
 
