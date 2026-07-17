@@ -1,4 +1,4 @@
-"""sinklint command-line interface."""
+"""godfile command-line interface."""
 
 from __future__ import annotations
 
@@ -44,13 +44,13 @@ def collect_files(
                 and not _excluded(str(f), exclude)
             )
         else:
-            print(f"sinklint: no such path: {raw}", file=sys.stderr)
+            print(f"godfile: no such path: {raw}", file=sys.stderr)
     return files
 
 
 def build_parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(
-        prog="sinklint",
+        prog="godfile",
         description=(
             "Detect C/C++ kitchen-sink headers: files that define more "
             "top-level types than the one-type-per-file convention allows."
@@ -104,14 +104,14 @@ def main(argv: list[str] | None = None) -> int:
 
     files = collect_files(args.paths, include_sources=args.sources, exclude=args.exclude)
     if not files:
-        print("sinklint: no matching files found", file=sys.stderr)
+        print("godfile: no matching files found", file=sys.stderr)
         return 2
 
     try:
         ctags_bin = find_ctags(args.ctags_bin)
         tags = run_ctags(ctags_bin, files)
     except CtagsError as e:
-        print(f"sinklint: {e}", file=sys.stderr)
+        print(f"godfile: {e}", file=sys.stderr)
         return 2
 
     types_by_file = extract_typedefs(tags)

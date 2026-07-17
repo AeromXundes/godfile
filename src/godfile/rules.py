@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 
 from .scanner import TypeDef
 
-RULE_ID = "SL001"
+RULE_ID = "GF001"
 RULE_NAME = "OneTypePerFile"
 
 # namespaces conventionally holding internal-only helpers, matched as exact
@@ -18,7 +18,7 @@ INTERNAL_NAMESPACE_SUFFIXES = ("_detail", "_details", "_impl", "_internal", "_in
 EXCEPTION_NAME_RE = re.compile(r"(Exception|Error)$")
 EXCEPTION_BASE_RE = re.compile(r"(exception|error)", re.IGNORECASE)
 
-IGNORE_FILE_DIRECTIVE = "sinklint:ignore-file"
+IGNORE_FILE_DIRECTIVE = "godfile:ignore-file"
 
 
 @dataclass

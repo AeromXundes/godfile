@@ -3,9 +3,9 @@ from pathlib import Path
 
 import pytest
 
-from sinklint.cli import main
-from sinklint.rules import Config, evaluate
-from sinklint.scanner import extract_typedefs, find_ctags, run_ctags
+from godfile.cli import main
+from godfile.rules import Config, evaluate
+from godfile.scanner import extract_typedefs, find_ctags, run_ctags
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -86,10 +86,10 @@ def test_sarif_output_is_valid(capsys):
     doc = json.loads(capsys.readouterr().out)
     assert doc["version"] == "2.1.0"
     run = doc["runs"][0]
-    assert run["tool"]["driver"]["name"] == "sinklint"
-    assert run["tool"]["driver"]["rules"][0]["id"] == "SL001"
+    assert run["tool"]["driver"]["name"] == "godfile"
+    assert run["tool"]["driver"]["rules"][0]["id"] == "GF001"
     (result,) = run["results"]
-    assert result["ruleId"] == "SL001"
+    assert result["ruleId"] == "GF001"
     assert "7 top-level types" in result["message"]["text"]
     assert len(result["relatedLocations"]) == 7
 

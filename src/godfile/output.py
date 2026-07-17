@@ -7,8 +7,8 @@ import json
 from . import __version__
 from .rules import RULE_ID, RULE_NAME, Finding
 
-TOOL_NAME = "sinklint"
-TOOL_URI = "https://github.com/aeromx/sinklint"
+TOOL_NAME = "godfile"
+TOOL_URI = "https://github.com/AeromXundes/godfile"
 
 
 def render_text(findings: list[Finding], files_scanned: int) -> str:
