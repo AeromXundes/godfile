@@ -81,6 +81,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="output format (default: text)",
     )
     ap.add_argument(
+        "--enum-weight-lines",
+        type=int,
+        default=100,
+        metavar="N",
+        help="an enum counts as its line count divided by N, capped at 1.0 — "
+        "small enums barely count, an N-line enum counts like a class "
+        "(default: 100; use 1 to count every enum as a full type)",
+    )
+    ap.add_argument(
         "--count-exceptions",
         action="store_true",
         help="count exception types toward the limit "
@@ -114,6 +123,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     if args.fail_at <= args.max_types:
         parser.error(f"--fail-at ({args.fail_at}) must be greater than --max-types ({args.max_types})")
+    if args.enum_weight_lines < 1:
+        parser.error("--enum-weight-lines must be >= 1")
 
     files = collect_files(args.paths, include_sources=args.sources, exclude=args.exclude)
     if not files:
@@ -131,6 +142,7 @@ def main(argv: list[str] | None = None) -> int:
     config = Config(
         max_types=args.max_types,
         fail_at=args.fail_at,
+        enum_weight_lines=args.enum_weight_lines,
         count_exceptions=args.count_exceptions,
         count_internal=args.count_internal,
     )

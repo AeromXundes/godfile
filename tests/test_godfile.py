@@ -77,8 +77,28 @@ def test_kitchen_sink_fails_with_exit_1():
 
 def test_max_types_threshold():
     ks = str(FIXTURES / "kitchen_sink.h")
+    # kitchen_sink scores 6.01: six full types + a one-line enum at 0.01
     assert main([ks, "--max-types", "7", "--fail-at", "8"]) == 0
-    assert main([ks, "--max-types", "6", "--fail-at", "7"]) == 1
+    assert main([ks, "--max-types", "5", "--fail-at", "6"]) == 1
+
+
+def test_pure_enum_header_is_clean_by_default():
+    assert main([str(FIXTURES / "enums.h")]) == 0
+
+
+def test_enum_weight_lines_one_restores_full_counting(capsys):
+    # 3 enums at full weight -> score 3 -> error once fail-at is lowered
+    assert main([str(FIXTURES / "enums.h"), "--enum-weight-lines", "1"]) == 0
+    out = capsys.readouterr().out
+    assert "warning: 3 top-level types, score 3" in out
+    assert main([str(FIXTURES / "enums.h"), "--enum-weight-lines", "1",
+                 "--fail-at", "3"]) == 1
+
+
+def test_enum_weight_lines_validation():
+    with pytest.raises(SystemExit) as exc:
+        main([str(FIXTURES / "enums.h"), "--enum-weight-lines", "0"])
+    assert exc.value.code == 2
 
 
 def test_warning_band_reports_but_exits_zero(capsys):
@@ -122,6 +142,7 @@ def test_json_output_shape(capsys):
     doc = json.loads(capsys.readouterr().out)
     (finding,) = doc["findings"]
     assert finding["typeCount"] == 7
+    assert finding["score"] == 6.01
     assert finding["severity"] == "error"
     assert {t["name"] for t in finding["exemptTypes"]} == {
         "ParseError", "detail::InternalHelper",

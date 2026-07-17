@@ -101,10 +101,38 @@ def test_anonymous_extras_marker():
     assert extract_typedefs(tags) == {}
 
 
+def test_type_weight_semantics():
+    from godfile.rules import is_enum_type, type_weight
+
+    def td(kind, loc=1, underlying=""):
+        return TypeDef(name="X", qualified_name="X", kind=kind, file="x.h",
+                       line=1, loc=loc, underlying=underlying)
+
+    assert type_weight(td("class", loc=500), 100) == 1.0
+    assert type_weight(td("enum", loc=10), 100) == 0.1
+    assert type_weight(td("enum", loc=250), 100) == 1.0  # capped
+    # typedef enum {...} Name; weights like an enum; typedef struct does not
+    assert is_enum_type(td("typedef", underlying="enum"))
+    assert type_weight(td("typedef", loc=10, underlying="enum"), 100) == 0.1
+    assert type_weight(td("typedef", loc=10, underlying="struct"), 100) == 1.0
+
+
+def test_typedef_enum_loc_spans_anon_body():
+    tags = [
+        {"_type": "tag", "name": "__anon42", "kind": "enum", "path": "x.h",
+         "line": 3, "end": 7},
+        {"_type": "tag", "name": "AlphaMode", "kind": "typedef", "path": "x.h",
+         "line": 8, "typeref": "enum:__anon42"},
+    ]
+    (t,) = extract_typedefs(tags)["x.h"]
+    assert t.underlying == "enum"
+    assert t.loc == 6  # anon body line 3 through typedef name line 8
+
+
 def test_finding_over_by():
     t = TypeDef(name="A", qualified_name="A", kind="class", file="x.h", line=1)
-    f = Finding(file="x.h", counted=[t, t, t], exempt=[], max_types=1)
-    assert f.over_by == 2
+    f = Finding(file="x.h", counted=[t, t, t], exempt=[], max_types=1, score=3.0)
+    assert f.over_by == 2.0
 
 
 def test_ignore_directive_on_unreadable_file_is_false():
@@ -136,10 +164,10 @@ def test_exclude_globs():
 
     fixtures = "tests/fixtures"
     all_files = collect_files([fixtures], include_sources=False)
-    assert len(all_files) == 3
+    assert len(all_files) == 4
     assert collect_files([fixtures], False, exclude=["fixtures"]) == []
-    assert len(collect_files([fixtures], False, exclude=["kitchen_*"])) == 2
-    assert len(collect_files([fixtures], False, exclude=["*/clean.h"])) == 2
+    assert len(collect_files([fixtures], False, exclude=["kitchen_*"])) == 3
+    assert len(collect_files([fixtures], False, exclude=["*/clean.h"])) == 3
 
 
 def test_exclude_flag_end_to_end():

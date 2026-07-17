@@ -17,7 +17,8 @@ def render_text(findings: list[Finding], files_scanned: int) -> str:
     lines = []
     for f in findings:
         lines.append(
-            f"{f.file}: {f.severity}: {len(f.counted)} top-level types (limit {f.max_types})"
+            f"{f.file}: {f.severity}: {len(f.counted)} top-level types, "
+            f"score {f.score:g} (limit {f.max_types})"
         )
         for t in f.counted:
             lines.append(f"  {t.file}:{t.line}: {t.kind} {t.qualified_name}")
@@ -43,6 +44,7 @@ def render_json(findings: list[Finding], files_scanned: int) -> str:
                 "file": f.file,
                 "severity": f.severity,
                 "typeCount": len(f.counted),
+                "score": f.score,
                 "maxTypes": f.max_types,
                 "types": [
                     {
@@ -93,8 +95,8 @@ def render_sarif(findings: list[Finding]) -> str:
                 "level": f.severity,
                 "message": {
                     "text": (
-                        f"File defines {len(f.counted)} top-level types "
-                        f"(limit {f.max_types}): {type_list}. "
+                        f"File defines {len(f.counted)} top-level types, "
+                        f"score {f.score:g} (limit {f.max_types}): {type_list}. "
                         "Consider splitting each type into its own header."
                     )
                 },

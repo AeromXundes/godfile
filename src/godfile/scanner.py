@@ -28,6 +28,8 @@ class TypeDef:
     end_line: int | None = None
     inherits: list[str] = field(default_factory=list)
     namespace: str = ""  # enclosing namespace path, "" if global
+    loc: int = 1  # source lines spanned by the definition
+    underlying: str = ""  # for typedefs of anonymous types: enum/struct/union
 
 
 def find_ctags(explicit: str | None = None) -> str:
@@ -105,8 +107,10 @@ def extract_typedefs(tags: list[dict]) -> dict[str, list[TypeDef]]:
     - anonymous types themselves are dropped (their typedef, if any, counts)
     - duplicates by qualified name (template specializations) collapse to one
     """
-    anon_names: set[str] = {
-        rec["name"] for rec in tags if rec["kind"] in TYPE_KINDS and _is_anonymous(rec)
+    anon_types: dict[str, dict] = {
+        rec["name"]: rec
+        for rec in tags
+        if rec["kind"] in TYPE_KINDS and _is_anonymous(rec)
     }
 
     by_file: dict[str, list[TypeDef]] = {}
@@ -116,6 +120,8 @@ def extract_typedefs(tags: list[dict]) -> dict[str, list[TypeDef]]:
         kind = rec.get("kind", "")
         scope_kind = rec.get("scopeKind", "")
         scope = rec.get("scope", "")
+        underlying = ""
+        loc = (rec.get("end") or rec.get("line", 1)) - rec.get("line", 1) + 1
 
         if scope_kind in NESTING_SCOPE_KINDS:
             continue
@@ -126,9 +132,13 @@ def extract_typedefs(tags: list[dict]) -> dict[str, list[TypeDef]]:
         elif kind == "typedef":
             # count only typedefs that give a name to an otherwise-anonymous type
             typeref = rec.get("typeref", "")
-            target = typeref.split(":", 1)[-1] if typeref else ""
-            if not (target in anon_names or target.startswith("__anon")):
+            underlying, _, target = typeref.partition(":")
+            if not (target in anon_types or target.startswith("__anon")):
                 continue
+            # the definition spans from the anonymous body to the typedef name
+            anon = anon_types.get(target)
+            if anon:
+                loc = rec.get("line", 1) - anon.get("line", 1) + 1
         else:
             continue
 
@@ -152,6 +162,8 @@ def extract_typedefs(tags: list[dict]) -> dict[str, list[TypeDef]]:
                 end_line=rec.get("end"),
                 inherits=inherits,
                 namespace=namespace,
+                loc=max(loc, 1),
+                underlying=underlying,
             )
         )
 

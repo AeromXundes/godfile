@@ -55,15 +55,24 @@ godfile . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
 Type count is a *proxy* for the god-file smell, and its reliability grows with
 its value: two types may be a class and its options struct; ten types is
 almost never fine. godfile therefore grades findings instead of treating the
-convention as binary:
+convention as binary. Each file gets a **score**:
+
+- a `class`/`struct`/`union` counts **1.0**
+- an `enum` counts **its line count ÷ `--enum-weight-lines`** (default 100),
+  capped at 1.0 — a five-line status enum is 0.05 of a type; an enum big
+  enough to deserve its own file counts like a class. A constants header of
+  small related enums scores near zero instead of flagging as a god file.
+  (`--enum-weight-lines 1` restores full counting.)
+
+The score maps to severity:
 
 - **≤ `--max-types`** (default 1) — clean, not reported
 - **> `--max-types`, < `--fail-at`** (default 4) — **warning**: reported, exit 0
 - **≥ `--fail-at`** — **error**: reported, exit 1
 
-So out of the box: 1 type is green, 2–3 is yellow, 4+ is red. Convention
-purists set `--fail-at 2`; legacy codebases raise `--fail-at` and ratchet it
-down. Severity flows through to SARIF `level` and the JSON output.
+So out of the box: one full type is green, a couple is yellow, 4+ is red.
+Convention purists set `--fail-at 2`; legacy codebases raise `--fail-at` and
+ratchet it down. Severity flows through to SARIF `level` and the JSON output.
 
 Exit codes: `0` no errors (warnings allowed), `1` errors, `2` usage/environment
 error — drop it straight into CI.
@@ -129,9 +138,9 @@ warning / 4+ error) plus vendored-code excludes (`gtest`, `third_party`,
 
 | Repo | Files | Errors | Warnings | Scan time | Worst offender |
 |---|---|---|---|---|---|
-| redis | 86 | 18 | 12 | 0.11s | `src/server.h` — 95 types across ~17 subsystems |
-| rocksdb | 615 | 113 | 148 | 0.34s | `java/rocksjni/portal.h` — 107 types |
-| abseil-cpp | 385 | 11 | 15 | 0.24s | test/internal helpers |
+| redis | 86 | 17 | 12 | 0.11s | `src/server.h` — 95 types (score 78.5) across ~17 subsystems |
+| rocksdb | 615 | 101 | 160 | 0.34s | `java/rocksjni/portal.h` — 107 types |
+| abseil-cpp | 385 | 10 | 15 | 0.24s | test/internal helpers |
 | spdlog | 97 | 1 | 13 | 0.06s | `common.h` — 7 types |
 | fmt | 22 | 8 | 7 | 0.07s | `base.h` — 22 types (few-header by design) |
 | nlohmann/json | 54 | 3 | 1 | 0.18s | `json.hpp` (single-header by design) |
