@@ -23,4 +23,4 @@ jobs:
       - name: Run tests (coverage gate ≥85%)
         run: pytest -q
       - name: Self-check SARIF output
-        run: godfile-cpp tests/fixtures --format sarif > godfile-cpp.sarif || test $? -eq 1
+        run: godfile tests/fixtures --format sarif > godfile.sarif || test $? -eq 1
