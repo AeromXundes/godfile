@@ -47,8 +47,12 @@ godfile include/ --max-types 3 --fail-at 8   # looser thresholds
 godfile include/ --format sarif > godfile.sarif   # for dashboards / GitHub code scanning
 godfile include/ --format json       # machine-readable
 godfile src/ --sources               # also scan .c/.cc/.cpp files
-godfile . --exclude third_party --exclude '*/bundled/*'   # skip vendored code
+godfile . --exclude generated        # skip more paths (vendor dirs are skipped by default)
 ```
+
+Common vendor directories (`boost`, `third_party`, `deps`, `gtest`, …) are
+excluded automatically so a first run isn't swamped by code you don't own;
+`--no-default-excludes` scans them too.
 
 ## Severity
 
@@ -117,28 +121,41 @@ godfile shells out to universal-ctags (JSON output) and applies the rules
 above to the tag stream. This makes it **zero-build-dependency**: it works on
 any source tree without a `compile_commands.json`, without the project
 compiling, and without heavyweight AST tooling. The trade-off is heuristic
-parsing — heavily macro-obfuscated type definitions can be missed. An
-AST-accurate mode (libclang against a compilation database) is a possible
-future addition for codebases that want exactness over convenience.
+parsing — heavily macro-obfuscated type definitions can be missed (see
+Non-goals for why that trade is deliberate).
 
-## Roadmap
+## Configuration
 
-- Config file (`[tool.godfile]` in `pyproject.toml` / `.godfilerc`) so
-  thresholds live with the repo
-- Extend size-weighting to small method-less structs, the way enums are
-  already weighted — an options struct coexisting with its primary class
-  shouldn't count like a second class
+CLI flags always win. Otherwise godfile uses the nearest `.godfilerc`
+(top-level TOML keys) or `pyproject.toml` `[tool.godfile]` table, searching
+upward from the working directory — so thresholds and excludes live with the
+repo and CI runs match local runs. `--config PATH` points at a specific file.
 
-Deliberately out of scope: scoring types by *relatedness*. Whether many types
-are one cohesive family or a grab-bag is a judgment call; godfile surfaces the
-candidates and leaves that call to you (`godfile:ignore-file` with a rationale
-comment is the intended answer for many-types-by-design files).
+```toml
+[tool.godfile]
+max-types = 1
+fail-at = 4
+enum-weight-lines = 100
+exclude = ["generated", "*/legacy/*"]  # adds to the built-in vendor excludes
+# default-excludes = false   # scan vendored dirs too
+# count-exceptions = true / count-internal = true / sources = true
+```
+
+## Non-goals
+
+- **Relatedness scoring.** Whether many types are one cohesive family or a
+  grab-bag is a judgment call; godfile surfaces the candidates and leaves that
+  call to you (`godfile:ignore-file` with a rationale comment is the intended
+  answer for many-types-by-design files).
+- **AST-accurate parsing (libclang).** Zero-setup on any tree — no
+  `compile_commands.json`, no working build — is most of the tool's value, and
+  field use hasn't surfaced parsing errors that would justify trading it away.
+  Heuristic parsing is a design choice, not a stopgap.
 
 ## Field results
 
-Shallow clones of six well-known repos, default settings (1 green / 2–3
-warning / 4+ error) plus vendored-code excludes (`gtest`, `third_party`,
-`bundled`, `deps`, …):
+Shallow clones of six well-known repos, out-of-the-box defaults (1 green /
+2–3 warning / 4+ error; vendored dirs excluded automatically):
 
 | Repo | Files | Errors | Warnings | Scan time | Worst offender |
 |---|---|---|---|---|---|

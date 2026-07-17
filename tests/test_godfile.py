@@ -95,10 +95,9 @@ def test_enum_weight_lines_one_restores_full_counting(capsys):
                  "--fail-at", "3"]) == 1
 
 
-def test_enum_weight_lines_validation():
-    with pytest.raises(SystemExit) as exc:
-        main([str(FIXTURES / "enums.h"), "--enum-weight-lines", "0"])
-    assert exc.value.code == 2
+def test_enum_weight_lines_validation(capsys):
+    assert main([str(FIXTURES / "enums.h"), "--enum-weight-lines", "0"]) == 2
+    assert "enum-weight-lines" in capsys.readouterr().err
 
 
 def test_warning_band_reports_but_exits_zero(capsys):
@@ -115,10 +114,9 @@ def test_default_bands():
     assert main([ks]) == 1  # 7 types >= default fail-at 4 -> error
 
 
-def test_fail_at_must_exceed_max_types():
-    with pytest.raises(SystemExit) as exc:
-        main([str(FIXTURES / "clean.h"), "--max-types", "4"])
-    assert exc.value.code == 2
+def test_fail_at_must_exceed_max_types(capsys):
+    assert main([str(FIXTURES / "clean.h"), "--max-types", "4"]) == 2
+    assert "must be greater than" in capsys.readouterr().err
 
 
 def test_sarif_output_is_valid(capsys):

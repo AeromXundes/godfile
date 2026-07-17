@@ -4,11 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "godfile"
-version = "0.3.0"
+version = "0.4.0"
 description = "Detect C/C++ kitchen-sink headers that violate the one-type-per-file convention"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
+dependencies = ["tomli>=1.1.0; python_version < '3.11'"]
 authors = [{ name = "Aerom Xundes", email = "aerom.xundes@gmail.com" }]
 keywords = ["c++", "static-analysis", "linter", "header", "sarif"]
 classifiers = [
