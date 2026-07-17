@@ -27,3 +27,9 @@ sinklint = "sinklint.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=sinklint --cov-fail-under=85 --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["sinklint"]
