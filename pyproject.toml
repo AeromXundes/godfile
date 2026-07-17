@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sinklint"
+version = "0.1.0"
+description = "Detect C/C++ kitchen-sink headers that violate the one-type-per-file convention"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "Aerom Xundes", email = "aerom.xundes@gmail.com" }]
+keywords = ["c++", "static-analysis", "linter", "header", "sarif"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Quality Assurance",
+]
+
+[project.urls]
+Homepage = "https://github.com/aeromx/sinklint"
+
+[project.scripts]
+sinklint = "sinklint.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
